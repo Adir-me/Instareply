@@ -1,0 +1,61 @@
+name: Android CI/CD Build Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Assemble Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create Dummy .env file if missing
+        run: |
+          if [ ! -f .env ]; then
+            echo 'OPENROUTER_API_KEY=""' > .env
+          fi
+
+      - name: Create dummy google-services.json if missing
+        run: |
+          if [ ! -f "app/google-services.json" ]; then
+            mkdir -p app
+            echo '{"project_info":{"project_number":"123456789012","project_id":"dummy","storage_bucket":"dummy.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:123456789012:android:1234567890123456789012","android_client_info":{"package_name":"com.aistudio.instaautoreply.kxmpzq"}},"oauth_client":[],"api_key":[{"current_key":"AIzaSyDummyKeyForBuildOnly0000000000"}],"services":{"appinvite_service":{"other_platform_oauth_client":[]}}}],"configuration_version":"1"}' > app/google-services.json
+          fi
+
+      - name: Create debug.keystore if missing
+        run: |
+          if [ ! -f "debug.keystore" ]; then
+            keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug, O=Android, C=US"
+          fi
+
+      - name: Build Debug APK with Gradle
+        run: |
+          if [ -f "./gradlew" ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug --no-daemon
+          else
+            gradle assembleDebug --no-daemon
+          fi
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/*.apk

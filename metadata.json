@@ -1,0 +1,6 @@
+{
+  "name": "InstaAutoReply AI",
+  "description": "AI-powered automated Instagram DM auto-responder with custom personas, typing realism, and smart overrides.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
